@@ -10,7 +10,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     flowType: 'implicit',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    storageKey: 'sb-fmuherccixmmotybpxcm-auth-token'
+    storageKey: 'sb-fmuherccixmmotybpxcm-auth-token',
+    debug: false,
   },
   global: {
     headers: {
@@ -21,8 +22,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     params: {
       eventsPerSecond: 2
     }
+  },
+  db: {
+    schema: 'public'
   }
 })
+
+// Add session recovery helper
+export const recoverSession = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) {
+      console.error('Session recovery error:', error)
+      // Try to refresh the session
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError) {
+        console.error('Session refresh error:', refreshError)
+        return null
+      }
+      return refreshData.session
+    }
+    return session
+  } catch (error) {
+    console.error('Session recovery failed:', error)
+    return null
+  }
+}
 
 // Database types based on your schema
 export interface DatabaseSong {
